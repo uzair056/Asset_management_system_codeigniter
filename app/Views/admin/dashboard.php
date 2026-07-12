@@ -20,7 +20,7 @@ style>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <div class="icon">📦</div>
-      <div class="text">Asset<span>Flow</span></div>
+      <div class="text">Solutions<span>Tech</span></div>
     </div>
     <ul class="nav-menu">
       <li class="nav-item active"><a href="#"><i class="fas fa-th-large"></i> Dashboard</a></li>

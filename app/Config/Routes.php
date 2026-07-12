@@ -12,3 +12,5 @@ $routes->post('/login', 'AuthController::login');
 $routes->get('/', function () {
     return view('welcome_message');
 });
+
+ $routes->get('/user_dashboard', 'UserController::index');

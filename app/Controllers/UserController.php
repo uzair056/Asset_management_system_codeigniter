@@ -32,20 +32,24 @@ class UserController extends BaseController
             return redirect()->back()->withInput()->with('errors', $userModel->errors());
         }
 
-    return redirect()->to('/login')->with('success', 'Registration successful. Please login.');
+        return redirect()->to('/login')->with('success', 'Registration successful. Please login.');
     }
 
 
 
- public function getEmployeeUsers()
-{
-    $userModel = new User();
+    public function getEmployeeUsers()
+    {
+        $userModel = new User();
 
-    $employees = $userModel
-        ->where('role', 'employee')
-        ->findAll();
+        $employees = $userModel
+            ->where('role', 'employee')
+            ->findAll();
 
-    return $this->response->setJSON($employees);
-}
-    
+        return $this->response->setJSON($employees);
+    }
+
+    public function index()
+    {
+        return view('users/dashboard');
+    }
 }
