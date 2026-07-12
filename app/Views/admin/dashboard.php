@@ -24,9 +24,9 @@ style>
     </div>
     <ul class="nav-menu">
       <li class="nav-item active"><a href="#"><i class="fas fa-th-large"></i> Dashboard</a></li>
-      <li class="nav-item"><a href="#"><i class="fas fa-users"></i> Employees</a></li>
-      <li class="nav-item"><a href="#"><i class="fas fa-laptop"></i> Assets</a></li>
-      <li class="nav-item"><a href="#"><i class="fas fa-undo-alt"></i> Returns</a></li>
+      <li class="nav-item"><a href="#employees-section"><i class="fas fa-users"></i> Employees</a></li>
+      <!-- <li class="nav-item"><a href="#"><i class="fas fa-laptop"></i> Assets</a></li>
+      <li class="nav-item"><a href="#"><i class="fas fa-undo-alt"></i> Returns</a></li> -->
       <li class="nav-item"><a href="#"><i class="fas fa-chart-bar"></i> Reports</a></li>
     </ul>
     <div class="sidebar-footer">
@@ -84,7 +84,7 @@ style>
     </div>
 
     <!-- Employees Table -->
-    <div class="table-card">
+    <div class="table-card" id="employees-section">
       <div class="table-header">
         <h3><i class="fas fa-users" style="color:#4338CA; margin-right:6px;"></i> All Employees</h3>
         <button class="btn-outline"><i class="fas fa-plus"></i> Add Employee</button>
@@ -109,6 +109,9 @@ style>
       </div>
     </div>
   </main>
+
+
+  
 
  <script src="<?= base_url('js/admin_dashboard.js') ?>"></script>
 

@@ -2,6 +2,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  scroll-behavior: smooth;
+
 }
 
 body {
@@ -19,7 +21,7 @@ body {
 
 /* ========== SIDEBAR ========== */
 .sidebar {
-  width: 240px;
+  width: 210px;
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
   padding: 1.8rem 1.2rem;
@@ -144,7 +146,7 @@ body {
 
 /* ========== MAIN CONTENT ========== */
 .main-content {
-  margin-left: 162px;
+  margin-left: 107px;
   flex: 1;
   padding: 2rem 2.5rem;
   transition: margin 0.3s;
@@ -430,3 +432,7 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+
+
+
