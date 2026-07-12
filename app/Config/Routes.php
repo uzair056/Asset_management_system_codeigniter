@@ -9,3 +9,6 @@ $routes->get('/login', 'UserController::show_login');
 $routes->post('/store', 'UserController::register');
 
 $routes->post('/login', 'AuthController::login');
+$routes->get('/', function () {
+    return view('welcome_message');
+});
