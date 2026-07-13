@@ -3,10 +3,8 @@
 namespace App\Controllers;
 
 use App\Models\User;
-use CodeIgniter\RESTful\ResourceController;
-use Firebase\JWT\JWT;
 
-class AuthController extends ResourceController
+class AuthController extends BaseController
 {
     public function login()
     {
@@ -14,45 +12,38 @@ class AuthController extends ResourceController
         $password = $this->request->getPost('password');
 
         $userModel = new User();
-
         $user = $userModel->where('email', $email)->first();
 
         if (!$user) {
-            return $this->respond([
-                'status' => false,
-                'message' => 'Invalid email.'
-            ], 401);
+            return redirect()->back()->withInput()->with('error', 'Invalid email address.');
         }
 
-        // Abhi plain password check kar rahe hain
-        if ($password != $user['password']) {
-            return $this->respond([
-                'status' => false,
-                'message' => 'Invalid password.'
-            ], 401);
+        $storedPassword = $user['password'];
+        $passwordValid = password_verify($password, $storedPassword) || $password === $storedPassword;
+
+        if (!$passwordValid) {
+            return redirect()->back()->withInput()->with('error', 'Invalid password.');
         }
 
-        $secret = env('JWT_SECRET');
-
-        $payload = [
-            'iss' => base_url(),
-            'aud' => base_url(),
-            'iat' => time(),
-            'exp' => time() + 900, // 15 minutes
-            'user' => [
-                'id' => $user['id'],
-                'name' => $user['name'],
-                'email' => $user['email'],
-                'role' => $user['role']
-            ]
-        ];
-
-        $token = JWT::encode($payload, $secret, 'HS256');
-
-        return $this->respond([
-            'status' => true,
-            'message' => 'Login Successful',
-            'token' => $token
+        $this->session->set([
+            'user_id' => $user['id'],
+            'name' => $user['name'],
+            'email' => $user['email'],
+            'role' => $user['role'],
+            'isLoggedIn' => true,
         ]);
+
+        if ($user['role'] === 'admin') {
+            return redirect()->to('/admin_dashboard');
+        }
+
+        return redirect()->to('/user_dashboard');
+    }
+
+    public function logout()
+    {
+        $this->session->destroy();
+
+        return redirect()->to('/login')->with('message', 'You have been logged out.');
     }
 }
