@@ -33,42 +33,82 @@ class AdminController extends BaseController
         $search = $this->request->getGet('search') ?? '';
         $assetType = $this->request->getGet('asset_type') ?? '';
         $assetStatus = $this->request->getGet('asset_status') ?? '';
+        $assignmentStatus = $this->request->getGet('assignment_status') ?? '';
         $editEmployeeId = $this->request->getGet('edit_employee');
         $editAssetId = $this->request->getGet('edit_asset');
 
-        $employees = $this->employeeModel
+        $employeeBuilder = $this->employeeModel
             ->select('employees.*, users.name as user_name')
-            ->join('users', 'users.id = employees.user_id', 'left')
-            ->like('employee_name', $search)
-            ->orLike('department', $search)
-            ->orLike('designation', $search)
-            ->orLike('users.name', $search)
+            ->join('users', 'users.id = employees.user_id', 'left');
+
+        if ($search !== '') {
+            $employeeBuilder
+                ->groupStart()
+                ->like('employees.employee_name', $search)
+                ->orLike('employees.department', $search)
+                ->orLike('employees.designation', $search)
+                ->orLike('users.name', $search)
+                ->groupEnd();
+        }
+
+        $employees = $employeeBuilder
             ->orderBy('employees.id', 'DESC')
             ->paginate(8, 'employees');
 
-        $assets = $this->assetModel
-            ->like('name', $search)
-            ->orLike('type', $search)
-            ->orLike('serial_number', $search)
-            ->when($assetType !== '', function ($builder) use ($assetType) {
-                $builder->where('type', $assetType);
-            })
-            ->when($assetStatus !== '', function ($builder) use ($assetStatus) {
-                $builder->where('status', $assetStatus);
-            })
+        $assetBuilder = $this->assetModel;
+        if ($search !== '') {
+            $assetBuilder
+                ->groupStart()
+                ->like('name', $search)
+                ->orLike('type', $search)
+                ->orLike('serial_number', $search)
+                ->groupEnd();
+        }
+        if ($assetType !== '') {
+            $assetBuilder->where('type', $assetType);
+        }
+        if ($assetStatus !== '') {
+            $assetBuilder->where('status', $assetStatus);
+        }
+
+        $assets = $assetBuilder
             ->orderBy('id', 'DESC')
             ->paginate(8, 'assets');
 
-        $assignments = $this->assignmentModel
+        $assignmentBuilder = $this->assignmentModel
             ->select('asset_assignments.*, employees.employee_name, assets.name as asset_name, assets.type as asset_type, assets.serial_number')
             ->join('employees', 'employees.id = asset_assignments.employee_id', 'left')
             ->join('assets', 'assets.id = asset_assignments.asset_id', 'left')
-            ->orderBy('asset_assignments.id', 'DESC')
-            ->paginate(8, 'assignments');
+            ->orderBy('asset_assignments.id', 'DESC');
+
+        if ($search !== '') {
+            $assignmentBuilder
+                ->groupStart()
+                ->like('employees.employee_name', $search)
+                ->orLike('assets.name', $search)
+                ->orLike('assets.type', $search)
+                ->orLike('assets.serial_number', $search)
+                ->groupEnd();
+        }
+        if ($assignmentStatus !== '') {
+            $assignmentBuilder->where('asset_assignments.status', $assignmentStatus);
+        }
+
+        $assignments = $assignmentBuilder->paginate(8, 'assignments');
 
         $employeePager = $this->employeeModel->pager;
         $assetPager = $this->assetModel->pager;
         $assignmentPager = $this->assignmentModel->pager;
+
+        $assignableEmployees = $this->employeeModel
+            ->select('employees.id, employees.employee_name')
+            ->orderBy('employees.employee_name', 'ASC')
+            ->findAll();
+
+        $availableAssets = $this->assetModel
+            ->where('status', 'available')
+            ->orderBy('name', 'ASC')
+            ->findAll();
 
         return view('admin/dashboard', [
             'employees' => $employees,
@@ -78,6 +118,8 @@ class AdminController extends BaseController
             'assetPager' => $assetPager,
             'assignmentPager' => $assignmentPager,
             'users' => $this->userModel->where('role', 'employee')->findAll(),
+            'assignableEmployees' => $assignableEmployees,
+            'availableAssets' => $availableAssets,
             'editEmployee' => $editEmployeeId ? $this->employeeModel->find($editEmployeeId) : null,
             'editAsset' => $editAssetId ? $this->assetModel->find($editAssetId) : null,
             'stats' => [
@@ -90,6 +132,7 @@ class AdminController extends BaseController
             'search' => $search,
             'assetType' => $assetType,
             'assetStatus' => $assetStatus,
+            'assignmentStatus' => $assignmentStatus,
         ]);
     }
 
@@ -180,9 +223,26 @@ class AdminController extends BaseController
             return redirect()->to('/login');
         }
 
-        $assetId = $this->request->getPost('asset_id');
-        $employeeId = $this->request->getPost('employee_id');
+        $assetId = (int) $this->request->getPost('asset_id');
+        $employeeId = (int) $this->request->getPost('employee_id');
         $notes = $this->request->getPost('notes');
+
+        if (!$assetId || !$employeeId) {
+            return redirect()->to('/admin_dashboard')->with('error', 'Please select both employee and asset.');
+        }
+
+        $employee = $this->employeeModel->find($employeeId);
+        if (!$employee) {
+            return redirect()->to('/admin_dashboard')->with('error', 'Selected employee was not found.');
+        }
+
+        $asset = $this->assetModel->find($assetId);
+        if (!$asset) {
+            return redirect()->to('/admin_dashboard')->with('error', 'Selected asset was not found.');
+        }
+        if (($asset['status'] ?? '') !== 'available') {
+            return redirect()->to('/admin_dashboard')->with('error', 'Only available assets can be assigned.');
+        }
 
         $activeAssignment = $this->assignmentModel->where('asset_id', $assetId)->where('status', 'assigned')->first();
         if ($activeAssignment) {
@@ -219,5 +279,61 @@ class AdminController extends BaseController
         }
 
         return redirect()->to('/admin_dashboard')->with('message', 'Asset returned successfully.');
+    }
+
+    public function exportAssignmentsReport()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
+            return redirect()->to('/login');
+        }
+
+        $assignmentStatus = $this->request->getGet('assignment_status') ?? '';
+        $search = $this->request->getGet('search') ?? '';
+
+        $builder = $this->assignmentModel
+            ->select('asset_assignments.*, employees.employee_name, assets.name as asset_name, assets.type as asset_type, assets.serial_number')
+            ->join('employees', 'employees.id = asset_assignments.employee_id', 'left')
+            ->join('assets', 'assets.id = asset_assignments.asset_id', 'left')
+            ->orderBy('asset_assignments.id', 'DESC');
+
+        if ($assignmentStatus !== '') {
+            $builder->where('asset_assignments.status', $assignmentStatus);
+        }
+
+        if ($search !== '') {
+            $builder
+                ->groupStart()
+                ->like('employees.employee_name', $search)
+                ->orLike('assets.name', $search)
+                ->orLike('assets.type', $search)
+                ->orLike('assets.serial_number', $search)
+                ->groupEnd();
+        }
+
+        $rows = $builder->findAll();
+        $filename = 'assignment_report_' . date('Ymd_His') . '.csv';
+
+        $handle = fopen('php://temp', 'w+');
+        fputcsv($handle, ['Employee', 'Asset', 'Type', 'Serial Number', 'Assigned At', 'Returned At', 'Status', 'Notes']);
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row['employee_name'] ?? '',
+                $row['asset_name'] ?? '',
+                $row['asset_type'] ?? '',
+                $row['serial_number'] ?? '',
+                $row['assigned_at'] ?? '',
+                $row['returned_at'] ?? '',
+                $row['status'] ?? '',
+                $row['notes'] ?? '',
+            ]);
+        }
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($csv);
     }
 }

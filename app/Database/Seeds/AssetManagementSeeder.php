@@ -76,6 +76,7 @@ class AssetManagementSeeder extends Seeder
                 'asset_id' => $assets[0]['id'],
                 'assigned_at' => date('Y-m-d H:i:s'),
                 'status' => 'assigned',
+                'returned_at' => null,
                 'notes' => 'Laptop assigned for development work',
             ],
             [

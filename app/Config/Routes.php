@@ -17,5 +17,6 @@ $routes->post('/admin/assets/save', 'AdminController::saveAsset');
 $routes->get('/admin/assets/delete/(:num)', 'AdminController::deleteAsset/$1');
 $routes->post('/admin/assignments/assign', 'AdminController::assignAsset');
 $routes->get('/admin/assignments/return/(:num)', 'AdminController::returnAsset/$1');
+$routes->get('/admin/reports/assignments', 'AdminController::exportAssignmentsReport');
 
 $routes->get('/user_dashboard', 'UserController::index');

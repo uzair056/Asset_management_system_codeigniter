@@ -46,7 +46,17 @@ class Migrations extends BaseConfig
      * - Y-m-d-His_
      * - Y_m_d_His_
      */
+    // Support both `YYYY-MM-DD-HHMMSS_` (default) and our repo's `YYYY-MM-DD-HHMMSS_` files.
+    // NOTE: If you change this, ensure migration filenames match.
     public string $timestampFormat = 'Y-m-d-His_';
+
+    /**
+     * Migration type.
+     *
+     * When set to "timestamp", CodeIgniter uses the filename timestamp as the migration version.
+     * This project uses timestamped migration filenames.
+     */
+    public string $type = 'timestamp';
 
     /**
      * --------------------------------------------------------------------------

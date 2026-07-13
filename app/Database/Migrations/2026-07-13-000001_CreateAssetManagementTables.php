@@ -79,3 +79,4 @@ class CreateAssetManagementTables extends Migration
         $this->forge->dropTable('users', true);
     }
 }
+

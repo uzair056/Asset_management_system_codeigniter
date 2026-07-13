@@ -154,8 +154,22 @@
         <form action="<?= site_url('admin/assignments/assign') ?>" method="post">
           <?= csrf_field() ?>
           <div class="form-grid">
-            <div><label>Employee</label><select name="employee_id" required><?php foreach ($users as $user): ?><option value="<?= esc($user['id']) ?>"><?= esc($user['name']) ?></option><?php endforeach; ?></select></div>
-            <div><label>Asset</label><select name="asset_id" required><?php foreach ($assets as $asset): ?><option value="<?= esc($asset['id']) ?>"><?= esc($asset['name']) ?> (<?= esc($asset['type']) ?>)</option><?php endforeach; ?></select></div>
+            <div>
+              <label>Employee</label>
+              <select name="employee_id" required>
+                <?php foreach ($assignableEmployees as $employee): ?>
+                  <option value="<?= esc($employee['id']) ?>"><?= esc($employee['employee_name']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label>Asset</label>
+              <select name="asset_id" required>
+                <?php foreach ($availableAssets as $asset): ?>
+                  <option value="<?= esc($asset['id']) ?>"><?= esc($asset['name']) ?> (<?= esc($asset['type']) ?>)</option>
+                <?php endforeach; ?>
+              </select>
+            </div>
           </div>
           <div style="margin-top: 10px;"><label>Notes</label><textarea name="notes" rows="3"></textarea></div>
           <div class="row" style="margin-top: 12px;"><button class="btn-primary" type="submit">Assign Asset</button></div>
@@ -164,14 +178,26 @@
 
       <div class="panel">
         <h3><i class="fa-solid fa-file-lines"></i> Assignment History & Reports</h3>
+        <form action="<?= site_url('admin_dashboard') ?>" method="get" class="row" style="margin-bottom: 8px;">
+          <input type="text" name="search" value="<?= esc($search) ?>" placeholder="Search employee or asset">
+          <select name="assignment_status">
+            <option value="">All assignment status</option>
+            <option value="assigned" <?= $assignmentStatus === 'assigned' ? 'selected' : '' ?>>Assigned</option>
+            <option value="returned" <?= $assignmentStatus === 'returned' ? 'selected' : '' ?>>Returned</option>
+          </select>
+          <button class="btn-secondary" type="submit">Filter</button>
+          <a class="btn-primary" style="display:inline-block;" href="<?= site_url('admin/reports/assignments?search=' . urlencode($search) . '&assignment_status=' . urlencode($assignmentStatus)) ?>">Export CSV</a>
+        </form>
         <table>
-          <thead><tr><th>Employee</th><th>Asset</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Employee</th><th>Asset</th><th>Status</th><th>Assigned</th><th>Returned</th><th>Action</th></tr></thead>
           <tbody>
             <?php foreach ($assignments as $assignment): ?>
               <tr>
                 <td><?= esc($assignment['employee_name']) ?></td>
                 <td><?= esc($assignment['asset_name']) ?></td>
                 <td><span class="badge <?= esc($assignment['status']) ?>"><?= esc(ucfirst($assignment['status'])) ?></span></td>
+                <td><?= esc($assignment['assigned_at'] ?? '-') ?></td>
+                <td><?= esc($assignment['returned_at'] ?? '-') ?></td>
                 <td>
                   <?php if ($assignment['status'] === 'assigned'): ?>
                     <a href="<?= site_url('admin/assignments/return/' . $assignment['id']) ?>" class="btn-secondary" style="display:inline-block; padding: 4px 8px;">Return</a>
